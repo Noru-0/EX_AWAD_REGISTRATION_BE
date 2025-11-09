@@ -80,14 +80,24 @@ app.post('/api/login', async (req, res) => {
     // browsers require `SameSite=None` and `secure=true` in production to allow cookies
     // to be set via fetch() with `credentials: 'include'`.
     const isProd = process.env.NODE_ENV === 'production'
-    res.cookie('token', token, {
+    // Optionally set a cookie domain so the cookie can be shared across subdomains
+    // e.g. COOKIE_DOMAIN=.onrender.com so both ex-backend.onrender.com and
+    // ex-frontend.onrender.com can access the token cookie.
+    const cookieOptions = {
       httpOnly: true,
       secure: isProd,
       // Use 'none' in production to allow cross-site cookies; keep 'lax' for local dev
       sameSite: isProd ? 'none' : 'lax',
       maxAge: 8 * 60 * 60 * 1000, // 8 hours
       path: '/',
-    });
+    }
+
+    const cookieDomain = process.env.COOKIE_DOMAIN
+    if (isProd && cookieDomain) {
+      cookieOptions.domain = cookieDomain
+    }
+
+    res.cookie('token', token, cookieOptions)
 
     res.json({ user: { id: user.id, email: user.email } });
   } catch (err) {
