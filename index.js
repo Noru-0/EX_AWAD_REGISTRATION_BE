@@ -227,7 +227,6 @@ app.post('/api/login', async (req, res) => {
     
     // Set cookie with appropriate options
     const cookieOptions = generateCookieOptions();
-    debug.log('Cookie options:', cookieOptions);
     res.cookie('token', token, cookieOptions);
 
     debug.log(`Login successful for ${user.email}`);
