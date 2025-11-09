@@ -63,16 +63,18 @@ const validateEmail = (email) => {
 const generateCookieOptions = () => {
   const options = {
     httpOnly: true,
-    secure: !isDev,
-    sameSite: isDev ? 'lax' : 'none',
+    secure: !isDev, // true in production (HTTPS required)
+    sameSite: isDev ? 'lax' : 'none', // 'none' for cross-origin in production
     maxAge: 8 * 60 * 60 * 1000, // 8 hours
     path: '/',
   };
 
-  const cookieDomain = process.env.COOKIE_DOMAIN;
-  if (!isDev && cookieDomain) {
-    options.domain = cookieDomain;
-  }
+  // In production, don't set domain for Render.com subdomains
+  // Let the cookie be set for the exact domain
+  // const cookieDomain = process.env.COOKIE_DOMAIN;
+  // if (!isDev && cookieDomain) {
+  //   options.domain = cookieDomain;
+  // }
 
   return options;
 };
@@ -225,6 +227,7 @@ app.post('/api/login', async (req, res) => {
     
     // Set cookie with appropriate options
     const cookieOptions = generateCookieOptions();
+    debug.log('Cookie options:', cookieOptions);
     res.cookie('token', token, cookieOptions);
 
     debug.log(`Login successful for ${user.email}`);
@@ -291,7 +294,9 @@ app.get('/api/me', async (req, res) => {
 // Logout endpoint (clear cookie)
 app.post('/api/logout', (req, res) => {
     debug.log(`Logout request`);
-    res.cookie('token', '', { httpOnly: true, maxAge: 0, path: '/' });
+    const cookieOptions = generateCookieOptions();
+    cookieOptions.maxAge = 0; // Clear the cookie
+    res.cookie('token', '', cookieOptions);
     res.json({ ok: true });
 });
 
