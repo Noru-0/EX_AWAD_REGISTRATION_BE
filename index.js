@@ -76,10 +76,15 @@ app.post('/api/login', async (req, res) => {
 
     const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '8h' });
     // set token as httpOnly cookie so middleware/edge can read it on the server
+    // For cross-site requests (frontend hosted on a different domain than backend)
+    // browsers require `SameSite=None` and `secure=true` in production to allow cookies
+    // to be set via fetch() with `credentials: 'include'`.
+    const isProd = process.env.NODE_ENV === 'production'
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: isProd,
+      // Use 'none' in production to allow cross-site cookies; keep 'lax' for local dev
+      sameSite: isProd ? 'none' : 'lax',
       maxAge: 8 * 60 * 60 * 1000, // 8 hours
       path: '/',
     });
