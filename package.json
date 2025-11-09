@@ -5,7 +5,12 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "dev:local": "nodemon index.js --local",
+    "prod": "node index.js --prod",
+    "test": "node index.js",
+    "config:list": "node -e \"console.log('Available configs:', require('./config/config-manager').listAvailableConfigs())\"",
+    "config:validate": "node -e \"require('./config/config-manager').loadConfig(); require('./config/config-manager').validateConfig()\""
   },
   "dependencies": {
     "bcrypt": "^5.1.0",
@@ -17,6 +22,7 @@
     "pg": "^8.11.1"
   },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "nodemon": "^2.0.22"
   }
 }

@@ -1,81 +1,116 @@
-# Auth Backend
+# Auth Backend Service
 
-Simple Express backend for handling register and login using PostgreSQL.
+A clean, production-ready Express.js authentication backend with PostgreSQL support and dual-environment capabilities.
 
-## Prerequisites
-- Node.js (LTS recommended)
-- PostgreSQL running and accessible
+## 🚀 Quick Start
 
-## Setup
-1. Copy `.env.example` (if present) to `.env` and fill the DB and JWT values.
-2. Install dependencies:
+### Development (Default)
+```bash
+npm run dev
+# Runs on: http://localhost:4000 (auto-finds available port)
+# Database: Mock data (no DB required)
+```
 
-       npm install
+### Local with Database
+```bash
+npm run dev:local
+# Runs on: http://localhost:4000
+# Database: Local PostgreSQL required
+```
 
-   or, if you prefer pnpm:
+### Production
+```bash
+npm run prod
+# Environment: Production
+# Database: AWS RDS required
+```
 
-       pnpm install
+## ⚙️ Environment Management
 
-3. (Optional) Create the database schema. A minimal schema is available at `sql/schema.sql`.
-   Example using psql with `DATABASE_URL`:
+### Organized Configuration
+```
+backend/
+├── config/
+│   ├── config-manager.js     # Smart config loader
+│   └── environments/         # All env files
+│       ├── .env.development  # Dev settings
+│       ├── .env.local       # Local DB settings
+│       └── .env.production  # Production settings
+└── .env                     # Active config
+```
 
-       psql "$DATABASE_URL" -f sql/schema.sql
+### Easy Setup
+```bash
+# Windows
+setup.bat          # Development
+setup.bat local    # Local with DB
+setup.bat prod     # Production
 
-## Run
-- Development with live reload (nodemon):
+# NPM Scripts
+npm run config:list      # Show available configs
+npm run config:validate  # Validate current config
+```
 
-      npm run dev
+## 🔧 API Endpoints
 
-- Production:
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| GET | `/api/health` | Health check | No |
+| POST | `/api/register` | User registration | No |
+| POST | `/api/login` | User authentication | No |
+| GET | `/api/me` | Get current user | Yes |
+| POST | `/api/logout` | Clear auth cookie | No |
 
-      npm start
+## 🔐 Authentication Flow
 
-## Startup behavior
-On start the server will check connectivity to the PostgreSQL database by running a simple `SELECT 1` query. If the DB is unreachable the process will log an error and exit. This prevents the HTTP server from starting when the database is not available.
+1. **Login**: POST `/api/login` with email/password
+2. **Cookie Set**: JWT token in HTTP-only cookie
+3. **Access**: Token automatically sent with requests
+4. **Verify**: `/api/me` validates token
+5. **Logout**: POST `/api/logout` clears cookie
 
-## Configuration / Environment variables
-Place configuration in a `.env` file in `backend/` (do NOT commit `.env`):
+## 🌍 Environment Features
 
-- `DATABASE_URL` - optional full Postgres connection string (preferred when set).
-- `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS` - alternative to `DATABASE_URL`.
-- `DB_SSL` - `true` to enable TLS for DB connections.
-- `DB_SSL_REJECT_UNAUTHORIZED` - set to `false` to allow self-signed certs (use with caution).
-- `JWT_SECRET` - secret used to sign JWTs (set to a strong value in production).
-- `FRONTEND_ORIGIN` - origin allowed for CORS (default: `http://localhost:3000`).
-- `PORT` - server port (default: `4000`).
-- `NODE_ENV` - `development` or `production`.
+### Development Mode
+- ✅ Runs without database (mock data)
+- ✅ Auto-finds available port
+- ✅ Detailed logging
+- ✅ Insecure cookies for localhost
 
-## Endpoints
-- `GET /api/health` — simple health check
-- `POST /api/register` — body: `{ email, password }` (creates a new user)
-- `POST /api/login` — body: `{ email, password }` (sets an httpOnly `token` cookie and returns user info)
-- `GET /api/me` — reads the `token` cookie and returns the authenticated user
-- `POST /api/logout` — clears the `token` cookie
+### Production Mode
+- ✅ Requires database connection
+- ✅ Secure cookies with HTTPS
+- ✅ Production-optimized settings
+- ✅ Environment validation
 
-## Notes on authentication
-- The server sets an HTTP-only cookie named `token` with the JWT on successful login. This cookie is used by `/api/me` to authenticate.
-- Cookies use `sameSite: 'lax'` and will use `secure: true` in production (when `NODE_ENV === 'production'`).
+## 🛡️ Security
 
-## Troubleshooting
-- If the server exits at startup, check DB connectivity and your database env variables.
-- For DB SSL issues, toggle `DB_SSL` and `DB_SSL_REJECT_UNAUTHORIZED` appropriately (be careful in production).
+- JWT tokens with 8-hour expiration
+- HTTP-only cookies (XSS protection)
+- Secure cookies in production
+- SameSite cookies (CSRF protection)
+- Password hashing with bcrypt
+- Environment-specific security settings
 
-## License
-Add license information here if applicable.
+## 📋 Configuration
 
-## Deploy to Render
+Environment variables are organized in `/config/environments/`:
 
-Quick steps to deploy the backend to Render:
+**Development**: Mock data, localhost settings
+**Local**: Real database, localhost settings  
+**Production**: AWS RDS, secure settings
 
-1. Push your repository to GitHub (or connect your Git provider) and ensure `render.yaml` is in the repo root.
-2. Open the Render dashboard and create a new service by connecting the repo/branch. Render will detect `render.yaml` and can create the services automatically.
-3. For the backend service (named `ex-backend` in `render.yaml`) add the following secrets in Render's dashboard:
-      - `DATABASE_URL` (your Postgres connection string)
-      - `JWT_SECRET` (a strong secret for signing tokens)
+The system automatically:
+- Loads correct environment
+- Validates required variables
+- Shows safe configuration summary
+- Handles port conflicts
+- Provides fallback options
 
-4. Optionally set the `FRONTEND_ORIGIN` env var in Render to your frontend URL (for example `https://ex-frontend.onrender.com`) so CORS is restricted to your frontend.
+## 🚢 Deployment
 
-Notes:
-- Do NOT commit secret values into the repository. Use Render's Secrets to store `DATABASE_URL` and `JWT_SECRET`.
-- Render will provide a public URL like `https://<service-name>.onrender.com`. The `render.yaml` uses `ex-backend`/`ex-frontend` as names; you can change them if you prefer a different subdomain.
-- After deployment, double-check logs in Render if the service fails to start (common issues: missing secrets, DB connectivity, Node version mismatch).
+### Render.com
+The backend is configured for Render deployment with `render.yaml`. Set these environment variables in Render:
+- `DATABASE_URL` - PostgreSQL connection string
+- `JWT_SECRET` - Strong secret for JWT signing
+- `NODE_ENV=production`
