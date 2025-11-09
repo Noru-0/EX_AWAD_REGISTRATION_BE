@@ -4,6 +4,11 @@ A clean, production-ready Express.js authentication backend with PostgreSQL supp
 
 ## 🚀 Quick Start
 
+### Installation
+```bash
+npm install
+```
+
 ### Development (Default)
 ```bash
 npm run dev

@@ -157,7 +157,10 @@ async function handleRegister(req, res) {
     }
 
     debug.log(`User registered: ${user.email}`);
-    res.status(201).json({ user });
+    res.status(201).json({ 
+      user,
+      message: 'Account created successfully! You can now log in with your credentials.'
+    });
   } catch (err) {
     debug.error('Registration error:', err);
     if (err.code === '23505') {
@@ -191,7 +194,7 @@ app.post('/api/login', async (req, res) => {
         if (user) {
           const isValidPassword = await bcrypt.compare(password, user.password);
           if (!isValidPassword) {
-            return res.status(401).json({ error: 'Invalid credentials' });
+            return res.status(401).json({ error: 'Incorrect password. Please check your password and try again.' });
           }
         }
       } catch (dbErr) {
@@ -205,17 +208,17 @@ app.post('/api/login', async (req, res) => {
       user = result.rows[0];
       
       if (!user) {
-        return res.status(401).json({ error: 'Invalid credentials' });
+        return res.status(401).json({ error: 'No account found with this email address. Please check your email or create a new account.' });
       }
 
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
-        return res.status(401).json({ error: 'Invalid credentials' });
+        return res.status(401).json({ error: 'Incorrect password. Please check your password and try again.' });
       }
     }
 
     if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ error: 'Authentication failed. Please check your email and password.' });
     }
 
     // Generate JWT token
