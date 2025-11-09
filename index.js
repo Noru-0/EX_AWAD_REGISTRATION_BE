@@ -1,3 +1,19 @@
+const debug = {
+  log: (...args) => {
+    if (isDev && config.ENABLE_DEBUG === 'true') {
+      console.log(...args);
+    }
+  },
+  warn: (...args) => {
+    if (isDev) {
+      console.warn(...args);
+    }
+  },
+  error: (...args) => {
+    console.error(...args);
+  }
+};
+
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
@@ -119,13 +135,13 @@ async function handleRegister(req, res) {
         if (dbErr.code === '23505') {
           return res.status(409).json({ error: 'User already exists' });
         }
-        console.warn('DB query failed in dev mode, using mock user for registration');
+        debug.warn('DB query failed in dev mode, using mock user for registration');
         user = { 
           id: Math.floor(Math.random() * 1000), 
           email, 
           created_at: new Date().toISOString()
         };
-        console.log('Created mock user for registration:', user);
+        debug.log('Created mock user for registration:', user);
       }
     } else {
       // Production mode: require DB
@@ -137,10 +153,10 @@ async function handleRegister(req, res) {
       user = result.rows[0];
     }
 
-    console.log(`User registered: ${user.email} in ${isDev ? 'development' : 'production'} mode`);
+    debug.log(`User registered: ${user.email}`);
     res.status(201).json({ user });
   } catch (err) {
-    console.error('Registration error:', err);
+    debug.error('Registration error:', err);
     if (err.code === '23505') {
       return res.status(409).json({ error: 'User already exists' });
     }
@@ -176,9 +192,9 @@ app.post('/api/login', async (req, res) => {
           }
         }
       } catch (dbErr) {
-        console.warn('DB query failed in dev mode, using mock user');
+        debug.warn('DB query failed in dev mode, using mock user');
         user = { id: 1, email };
-        console.log('Using mock user for login:', user);
+        debug.log('Using mock user for login:', user);
       }
     } else {
       // Production mode: require DB
@@ -210,10 +226,10 @@ app.post('/api/login', async (req, res) => {
     const cookieOptions = generateCookieOptions();
     res.cookie('token', token, cookieOptions);
 
-    console.log(`Login successful for ${user.email} in ${isDev ? 'development' : 'production'} mode`);
-    res.json({ user: { id: user.id, email: user.email } });
+    debug.log(`Login successful for ${user.email}`);
+    res.json({ ok: true, user: { id: user.id, email: user.email } });
   } catch (err) {
-    console.error('Login error:', err);
+    debug.error('Login error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -246,7 +262,7 @@ app.get('/api/me', async (req, res) => {
         const result = await db.query('SELECT id, email, created_at FROM users WHERE id = $1', [payload.userId]);
         user = result.rows[0];
       } catch (dbErr) {
-        console.warn('DB query failed in dev mode, using mock user from token');
+        debug.warn('DB query failed in dev mode, using mock user from token');
         user = { 
           id: payload.userId, 
           email: payload.email, 
@@ -263,25 +279,25 @@ app.get('/api/me', async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    console.log(`Token verified for ${user.email} in ${isDev ? 'development' : 'production'} mode`);
+    debug.log(`Token verified for ${user.email}`);
     res.json({ user });
   } catch (err) {
-    console.error('Auth verification error:', err);
+    debug.error('Auth verification error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // Logout endpoint (clear cookie)
 app.post('/api/logout', (req, res) => {
-  console.log(`Logout request in ${isDev ? 'development' : 'production'} mode`);
-  res.cookie('token', '', { httpOnly: true, maxAge: 0, path: '/' });
-  res.json({ ok: true });
+    debug.log(`Logout request`);
+    res.cookie('token', '', { httpOnly: true, maxAge: 0, path: '/' });
+    res.json({ ok: true });
 });
 
 
 // Start server with environment-aware DB connectivity check
 async function startServer() {
-  console.log(`Starting server in ${isDev ? 'development' : 'production'} mode...`);
+  debug.log(`Starting server in ${isDev ? 'development' : 'production'} mode...`);
   
   if (!isDev) {
     // Production mode: require DB connection
@@ -300,8 +316,8 @@ async function startServer() {
       await db.query('SELECT 1');
       console.log('✅ Postgres connection: OK');
     } catch (err) {
-      console.warn('⚠️  Postgres connection: FAILED (continuing in dev mode)');
-      console.warn('Database operations will fail. Set up local DB or use production env.');
+      debug.warn('⚠️  Postgres connection: FAILED (continuing in dev mode)');
+      debug.warn('Database operations will fail. Set up local DB or use production env.');
     }
   }
 
@@ -311,7 +327,7 @@ async function startServer() {
     try {
       const availablePort = await configManager.findAvailablePort(parseInt(PORT));
       if (availablePort !== parseInt(PORT)) {
-        console.log(`⚠️  Port ${PORT} is busy, using port ${availablePort} instead`);
+        debug.log(`⚠️  Port ${PORT} is busy, using port ${availablePort} instead`);
         serverPort = availablePort;
       }
     } catch (err) {
