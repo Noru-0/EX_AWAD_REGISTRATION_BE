@@ -1,19 +1,3 @@
-const debug = {
-  log: (...args) => {
-    if (isDev && config.ENABLE_DEBUG === 'true') {
-      console.log(...args);
-    }
-  },
-  warn: (...args) => {
-    if (isDev) {
-      console.warn(...args);
-    }
-  },
-  error: (...args) => {
-    console.error(...args);
-  }
-};
-
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
@@ -33,11 +17,29 @@ if (!configManager.validateConfig()) {
   process.exit(1);
 }
 
+// Get environment info after config is loaded
+const isDev = process.env.NODE_ENV !== 'production';
+const db = require('./db');
+
+// Debug utility (defined after config is loaded)
+const debug = {
+  log: (...args) => {
+    if (isDev && process.env.ENABLE_DEBUG === 'true') {
+      console.log(...args);
+    }
+  },
+  warn: (...args) => {
+    if (isDev) {
+      console.warn(...args);
+    }
+  },
+  error: (...args) => {
+    console.error(...args);
+  }
+};
+
 // Display configuration (safe - no secrets)
 configManager.displayConfig();
-
-// Import database module after config is loaded
-const db = require('./db');
 
 // Initialize Express app
 const app = express();
@@ -46,7 +48,6 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'change_me';
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:3000';
-const isDev = process.env.NODE_ENV !== 'production';
 
 // Middleware
 app.use(cors({ origin: FRONTEND_ORIGIN, credentials: true }));
