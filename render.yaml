@@ -1,0 +1,23 @@
+# Render manifest for backend service (backend/render.yaml)
+# This file declares a single web service for the backend. Set secrets in the Render dashboard.
+
+spec_version: 1
+
+services:
+  - type: web
+    name: ex-backend
+    env: node
+    region: oregon
+    branch: master
+    plan: free
+    autoDeploy: true
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+    secrets:
+      - key: DATABASE_URL
+      - key: JWT_SECRET
+    # Optional: set FRONTEND_ORIGIN in the Render dashboard to restrict CORS
+    # Example: FRONTEND_ORIGIN = https://ex-frontend.onrender.com

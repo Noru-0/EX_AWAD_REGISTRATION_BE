@@ -16,7 +16,7 @@ Simple Express backend for handling register and login using PostgreSQL.
 
        pnpm install
 
-3. Create the database schema. A minimal schema is available at `sql/schema.sql`.
+3. (Optional) Create the database schema. A minimal schema is available at `sql/schema.sql`.
    Example using psql with `DATABASE_URL`:
 
        psql "$DATABASE_URL" -f sql/schema.sql
@@ -62,3 +62,20 @@ Place configuration in a `.env` file in `backend/` (do NOT commit `.env`):
 
 ## License
 Add license information here if applicable.
+
+## Deploy to Render
+
+Quick steps to deploy the backend to Render:
+
+1. Push your repository to GitHub (or connect your Git provider) and ensure `render.yaml` is in the repo root.
+2. Open the Render dashboard and create a new service by connecting the repo/branch. Render will detect `render.yaml` and can create the services automatically.
+3. For the backend service (named `ex-backend` in `render.yaml`) add the following secrets in Render's dashboard:
+      - `DATABASE_URL` (your Postgres connection string)
+      - `JWT_SECRET` (a strong secret for signing tokens)
+
+4. Optionally set the `FRONTEND_ORIGIN` env var in Render to your frontend URL (for example `https://ex-frontend.onrender.com`) so CORS is restricted to your frontend.
+
+Notes:
+- Do NOT commit secret values into the repository. Use Render's Secrets to store `DATABASE_URL` and `JWT_SECRET`.
+- Render will provide a public URL like `https://<service-name>.onrender.com`. The `render.yaml` uses `ex-backend`/`ex-frontend` as names; you can change them if you prefer a different subdomain.
+- After deployment, double-check logs in Render if the service fails to start (common issues: missing secrets, DB connectivity, Node version mismatch).
