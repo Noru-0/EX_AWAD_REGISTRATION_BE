@@ -1,11 +1,11 @@
 # Render manifest for backend service (backend/render.yaml)
-# This file declares a single web service for the backend. Set secrets in the Render dashboard.
+# This file declares a single web service for the backend with enhanced auth features
 
 spec_version: 1
 
 services:
   - type: web
-    name: ex-backend
+    name: ex-awad-registration-be
     env: node
     region: oregon
     branch: master
@@ -16,8 +16,16 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: ACCESS_TOKEN_EXPIRY
+        value: 15m
+      - key: REFRESH_TOKEN_EXPIRY
+        value: 7d
     secrets:
       - key: DATABASE_URL
       - key: JWT_SECRET
-    # Optional: set FRONTEND_ORIGIN in the Render dashboard to restrict CORS
-    # Example: FRONTEND_ORIGIN = https://ex-frontend.onrender.com
+      - key: JWT_REFRESH_SECRET
+      - key: FRONTEND_ORIGIN
+      # Optional: Admin emails for admin features
+      - key: ADMIN_EMAILS
+      # Optional: Cookie domain for production
+      - key: COOKIE_DOMAIN

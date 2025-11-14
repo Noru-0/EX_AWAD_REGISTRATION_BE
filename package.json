@@ -1,14 +1,14 @@
 {
   "name": "auth-backend",
-  "version": "1.0.0",
-  "description": "Simple Express backend for login with PostgreSQL",
-  "main": "index.js",
+  "version": "2.0.0",
+  "description": "Express backend with MVC architecture for authentication with PostgreSQL",
+  "main": "app.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
-    "dev:local": "nodemon index.js --local",
-    "prod": "node index.js --prod",
-    "test": "node index.js",
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "dev:local": "nodemon app.js --local",
+    "prod": "node app.js --prod",
+    "test": "node app.js",
     "config:list": "node -e \"console.log('Available configs:', require('./config/config-manager').listAvailableConfigs())\"",
     "config:validate": "node -e \"require('./config/config-manager').loadConfig(); require('./config/config-manager').validateConfig()\""
   },
