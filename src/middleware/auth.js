@@ -9,9 +9,11 @@ class AuthMiddleware {
   // Middleware to verify access token
   verifyToken = async (req, res, next) => {
     try {
-      const { accessToken, refreshToken } = extractTokensFromCookies(req);
+      // Get token from Authorization header (Bearer token)
+      const authHeader = req.headers.authorization;
+      const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-      if (!accessToken) {
+      if (!token) {
         return res.status(401).json({
           success: false,
           message: 'Access token required',
@@ -21,25 +23,16 @@ class AuthMiddleware {
 
       try {
         // Verify access token
-        const user = await this.authService.verifyAccessToken(accessToken);
+        const user = await this.authService.verifyAccessToken(token);
         req.user = user;
         next();
       } catch (error) {
         if (error instanceof TokenExpiredError) {
-          // Access token expired, try to refresh if refresh token exists
-          if (refreshToken) {
-            return res.status(401).json({
-              success: false,
-              message: 'Access token expired',
-              code: 'TOKEN_EXPIRED'
-            });
-          } else {
-            return res.status(401).json({
-              success: false,
-              message: 'Access token expired and no refresh token available',
-              code: 'SESSION_EXPIRED'
-            });
-          }
+          return res.status(401).json({
+            success: false,
+            message: 'Access token expired',
+            code: 'TOKEN_EXPIRED'
+          });
         }
         
         if (error instanceof AuthenticationError) {
@@ -65,16 +58,17 @@ class AuthMiddleware {
   // Optional middleware for routes that work with or without authentication
   optionalAuth = async (req, res, next) => {
     try {
-      const { accessToken } = extractTokensFromCookies(req);
+      const authHeader = req.headers.authorization;
+      const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-      if (!accessToken) {
+      if (!token) {
         // No token, continue without user
         req.user = null;
         return next();
       }
 
       try {
-        const user = await this.authService.verifyAccessToken(accessToken);
+        const user = await this.authService.verifyAccessToken(token);
         req.user = user;
       } catch (error) {
         // Invalid/expired token, continue without user
@@ -125,19 +119,27 @@ class AuthMiddleware {
   // Rate limiting middleware (simple implementation)
   rateLimiter = (maxRequests = 10, windowMs = 15 * 60 * 1000) => {
     const requests = new Map();
+    const isDev = process.env.NODE_ENV !== 'production';
 
     return (req, res, next) => {
-      const ip = req.ip || req.connection.remoteAddress;
+      // In development, be more lenient or skip rate limiting for certain requests
+      if (isDev && process.env.DISABLE_RATE_LIMIT === 'true') {
+        return next();
+      }
+
+      const ip = req.ip || req.connection.remoteAddress || 'unknown';
       const now = Date.now();
       const windowStart = now - windowMs;
 
-      // Clean old entries
-      for (const [key, timestamps] of requests.entries()) {
-        const validTimestamps = timestamps.filter(timestamp => timestamp > windowStart);
-        if (validTimestamps.length === 0) {
-          requests.delete(key);
-        } else {
-          requests.set(key, validTimestamps);
+      // Clean old entries periodically
+      if (requests.size > 1000) { // Prevent memory leak
+        for (const [key, timestamps] of requests.entries()) {
+          const validTimestamps = timestamps.filter(timestamp => timestamp > windowStart);
+          if (validTimestamps.length === 0) {
+            requests.delete(key);
+          } else {
+            requests.set(key, validTimestamps);
+          }
         }
       }
 
@@ -146,10 +148,19 @@ class AuthMiddleware {
       const recentRequests = ipRequests.filter(timestamp => timestamp > windowStart);
 
       if (recentRequests.length >= maxRequests) {
+        const retryAfter = Math.ceil((recentRequests[0] + windowMs - now) / 1000);
+        
+        if (isDev) {
+          console.warn(`Rate limit hit for IP ${ip}: ${recentRequests.length}/${maxRequests} requests`);
+        }
+        
         return res.status(429).json({
           success: false,
           message: 'Too many requests. Please try again later.',
-          retryAfter: Math.ceil((recentRequests[0] + windowMs - now) / 1000)
+          retryAfter,
+          limit: maxRequests,
+          windowMs: Math.ceil(windowMs / 1000),
+          current: recentRequests.length
         });
       }
 

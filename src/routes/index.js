@@ -14,8 +14,13 @@ router.get('/health', (req, res) => {
   });
 });
 
-// Apply rate limiting to auth routes
-router.use('/auth', authMiddleware.rateLimiter(20, 15 * 60 * 1000)); // 20 requests per 15 minutes
+// Apply rate limiting to auth routes (more lenient in development)
+const isDev = process.env.NODE_ENV !== 'production';
+const rateLimitConfig = isDev 
+  ? { maxRequests: 100, windowMs: 15 * 60 * 1000 } // 100 requests per 15 minutes in dev
+  : { maxRequests: 20, windowMs: 15 * 60 * 1000 };  // 20 requests per 15 minutes in prod
+
+router.use('/auth', authMiddleware.rateLimiter(rateLimitConfig.maxRequests, rateLimitConfig.windowMs));
 router.use('/auth', authRoutes);
 
 // Legacy routes for backward compatibility

@@ -35,25 +35,13 @@ class AuthController {
     try {
       const result = await this.authService.login(req.body);
       
-      // Set httpOnly cookies for tokens
-      const cookieOptions = generateCookieOptions();
-      
-      // Set access token cookie (shorter expiry)
-      res.cookie('accessToken', result.accessToken, {
-        ...cookieOptions,
-        maxAge: 15 * 60 * 1000 // 15 minutes
-      });
-      
-      // Set refresh token cookie (longer expiry)
-      res.cookie('refreshToken', result.refreshToken, {
-        ...cookieOptions,
-        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-      });
-
-      // Return user data without tokens (since they're in cookies)
+      // Return tokens in response body as per requirements
+      // Access token should be stored in memory, refresh token in localStorage
       res.json({
         success: result.success,
         user: result.user,
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
         message: 'Login successful'
       });
     } catch (error) {
@@ -104,26 +92,21 @@ class AuthController {
   // Refresh access token
   refreshToken = async (req, res) => {
     try {
-      const refreshToken = req.cookies.refreshToken;
+      const { refreshToken } = req.body; // Get from request body instead of cookies
       
       if (!refreshToken) {
         return res.status(401).json({
           success: false,
-          message: 'Refresh token not found'
+          message: 'Refresh token required'
         });
       }
       
       const result = await this.authService.refreshAccessToken(refreshToken);
       
-      // Set new access token cookie
-      const cookieOptions = generateCookieOptions();
-      res.cookie('accessToken', result.accessToken, {
-        ...cookieOptions,
-        maxAge: 15 * 60 * 1000 // 15 minutes
-      });
-      
       res.json({
         success: true,
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken, // Return new refresh token if rotation is implemented
         message: 'Token refreshed successfully'
       });
     } catch (error) {
