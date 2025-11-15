@@ -48,9 +48,25 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:3000';
 
+// Allow multiple origins for CORS (development + production)
+const allowedOrigins = [
+  FRONTEND_ORIGIN,
+  'http://localhost:3000',
+  'https://ex-awad-registration-fe.onrender.com'
+];
+
 // Global middleware
 app.use(cors({ 
-  origin: FRONTEND_ORIGIN, 
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
